@@ -1,0 +1,32 @@
+{
+	"name": "w7/rangine-mqtt",
+	"description": "rangine mqtt",
+	"type": "library",
+	"keywords": [
+		"rangine",
+		"mqtt"
+	],
+	"license": "Apache-2.0",
+	"require": {
+		"php": ">=7.1.0",
+		"w7/rangine": "*",
+		"simps/mqtt": "^1.3"
+	},
+	"require-dev": {
+		"w7/php-cs-fixer": "*",
+		"phpunit/phpunit": "^8.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"W7\\Mqtt\\Tests\\" : "tests/",
+			"W7\\Mqtt\\": "src/"
+		}
+	},
+	"extra": {
+		"rangine": {
+			"providers": [
+				"W7\\Mqtt\\ServiceProvider"
+			]
+		}
+	}
+}
