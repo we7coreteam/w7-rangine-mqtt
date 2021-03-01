@@ -12,11 +12,15 @@
 
 namespace W7\Mqtt\Server;
 
+use Simps\MQTT\Protocol\ProtocolInterface;
 use Simps\MQTT\Protocol\Types;
-use Simps\MQTT\Protocol\V3;
+use W7\App;
 use W7\Core\Dispatcher\RequestDispatcher;
+use W7\Core\Exception\HandlerExceptions;
 use W7\Http\Message\Server\Request;
 use W7\Http\Message\Server\Response;
+use W7\Mqtt\Handler\HandlerInterface;
+use W7\Mqtt\Message\PingRespMessage;
 
 class Dispatcher extends RequestDispatcher {
 	public function dispatch(...$params) {
@@ -26,45 +30,63 @@ class Dispatcher extends RequestDispatcher {
 		 */
 		$psr7Request = $params[0];
 		$psr7Response = $params[1];
-		$this->getContext()->setRequest($psr7Request);
 		$this->getContext()->setResponse($psr7Response);
 		$this->getContext()->setContextDataByKey('server-type', $this->serverType);
 
 		try {
-			$data = V3::unpack($psr7Request->getBody()->getContents());
+			/**
+			 * @var Server $mqttServer
+			 */
+			$mqttServer = App::$mqttServer;
+			/**
+			 * @var ProtocolInterface $protocol
+			 */
+			$protocol = Server::$supportProtocol[$mqttServer->setting['protocol']];
+			$data = $protocol::unpack($psr7Request->getBody()->getContents());
 			if (is_array($data) && isset($data['type'])) {
+				$psr7Request = $psr7Request->withParsedBody($data);
+				$this->getContext()->setRequest($psr7Request);
+				/**
+				 * @var HandlerInterface $handler
+				 */
+				$handler = $this->getContainer()->singleton($mqttServer->setting['handler']);
 				switch ($data['type']) {
 					case Types::PINGREQ: // 心跳请求
-						[$class, $func] = $this->_config['receiveCallbacks'][Types::PINGREQ];
-						$obj = new $class();
-						if ($obj->{$func}($server, $fd, $fromId, $data)) {
+						if ($handler->onMqPing($psr7Request)) {
 							// 返回心跳响应
-							$server->send($fd, Protocol::pack(['type' => Types::PINGRESP]));
+							$psr7Response->withContent(new PingRespMessage())->send();
 						}
 						break;
 					case Types::DISCONNECT: // 客户端断开连接
-						[$class, $func] = $this->_config['receiveCallbacks'][Types::DISCONNECT];
-						$obj = new $class();
-						if ($obj->{$func}($server, $fd, $fromId, $data)) {
-							if ($server->exist($fd)) {
-								$server->close($fd);
-							}
+						if ($handler->onMqDisconnect($psr7Request) && App::$server->getServer()->exist($this->getContext()->getContextDataByKey('fd'))) {
+							$psr7Response->close();
 						}
 						break;
-					case Types::CONNECT: // 连接
+					case Types::CONNECT:
+						$message = $handler->onMqConnect($psr7Request);
+						$psr7Response->withContent($message)->send();
+						break;
 					case Types::PUBLISH: // 发布消息
+						$message = $handler->onMqPublish($psr7Request);
+						if ($message) {
+							$psr7Response->withContent($message)->send();
+						}
+						break;
 					case Types::SUBSCRIBE: // 订阅
+						$message = $handler->onMqSubscribe($psr7Request);
+						$psr7Response->withContent($message)->send();
+						break;
 					case Types::UNSUBSCRIBE: // 取消订阅
-						[$class, $func] = $this->_config['receiveCallbacks'][$data['type']];
-						$obj = new $class();
-						$obj->{$func}($server, $fd, $fromId, $data);
+						$message = $handler->onMqUnsubscribe($psr7Request);
+						$psr7Response->withContent($message)->send();
 						break;
 				}
 			} else {
-				$server->close($fd);
+				$psr7Response->close();
 			}
 		} catch (\Throwable $e) {
-			$server->close($fd);
+			$this->getContainer()->singleton(HandlerExceptions::class)->handle($e, $this->serverType);
+			$psr7Response->close();
 		}
 	}
 }
