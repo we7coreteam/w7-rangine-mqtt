@@ -27,7 +27,7 @@ class Server extends TcpServer {
 
 	public function __construct() {
 		parent::__construct();
-		App::$mqttServer = $this;
+		App::getApp()->mqttServer = $this;
 	}
 
 	public function getType() {

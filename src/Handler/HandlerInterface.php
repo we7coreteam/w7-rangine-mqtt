@@ -14,6 +14,8 @@ namespace W7\Mqtt\Handler;
 
 use W7\Http\Message\Server\Request;
 use W7\Mqtt\Message\ConnAckMessage;
+use W7\Mqtt\Message\PubCompMessage;
+use W7\Mqtt\Message\PubRelMessage;
 use W7\Mqtt\Message\SubAckMessage;
 use W7\Mqtt\Message\UnSubAckMessage;
 
@@ -22,6 +24,8 @@ interface HandlerInterface {
 	public function onMqPing(Request $request): bool;
 	public function onMqDisconnect(Request $request): bool;
 	public function onMqPublish(Request $request);
+	public function onMqPublishRec(Request $request) : PubRelMessage;
+	public function onMqPublishRel(Request $request) : PubCompMessage;
 	public function onMqSubscribe(Request $request) : SubAckMessage;
-	public function onMqUnsubscribe(Request $request) : UnSubAckMessage;
+	public function onMqUnSubscribe(Request $request) : UnSubAckMessage;
 }

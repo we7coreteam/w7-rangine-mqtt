@@ -37,7 +37,7 @@ class Dispatcher extends RequestDispatcher {
 			/**
 			 * @var Server $mqttServer
 			 */
-			$mqttServer = App::$mqttServer;
+			$mqttServer = App::getApp()->mqttServer;
 			/**
 			 * @var ProtocolInterface $protocol
 			 */
@@ -54,39 +54,47 @@ class Dispatcher extends RequestDispatcher {
 					case Types::PINGREQ: // 心跳请求
 						if ($handler->onMqPing($psr7Request)) {
 							// 返回心跳响应
-							$psr7Response->withContent(new PingRespMessage())->send();
+							$psr7Response = $psr7Response->withContent(new PingRespMessage());
 						}
 						break;
 					case Types::DISCONNECT: // 客户端断开连接
 						if ($handler->onMqDisconnect($psr7Request) && App::$server->getServer()->exist($this->getContext()->getContextDataByKey('fd'))) {
-							$psr7Response->close();
+							$psr7Response = $psr7Response->close();
 						}
 						break;
 					case Types::CONNECT:
 						$message = $handler->onMqConnect($psr7Request);
-						$psr7Response->withContent($message)->send();
+						$psr7Response = $psr7Response->withContent($message);
 						break;
 					case Types::PUBLISH: // 发布消息
 						$message = $handler->onMqPublish($psr7Request);
-						if ($message) {
-							$psr7Response->withContent($message)->send();
-						}
+						$message && $psr7Response =  $psr7Response->withContent($message);
+						break;
+					case Types::PUBREC: // 消息发布收到报文
+						$message = $handler->onMqPublishRec($psr7Request);
+						$psr7Response = $psr7Response->withContent($message);
+						break;
+					case Types::PUBREL: // 消息发布释放
+						$message = $handler->onMqPublishRel($psr7Request);
+						$message && $psr7Response = $psr7Response->withContent($message);
 						break;
 					case Types::SUBSCRIBE: // 订阅
 						$message = $handler->onMqSubscribe($psr7Request);
-						$psr7Response->withContent($message)->send();
+						$psr7Response = $psr7Response->withContent($message);
 						break;
 					case Types::UNSUBSCRIBE: // 取消订阅
-						$message = $handler->onMqUnsubscribe($psr7Request);
-						$psr7Response->withContent($message)->send();
+						$message = $handler->onMqUnSubscribe($psr7Request);
+						$psr7Response = $psr7Response->withContent($message);
 						break;
 				}
 			} else {
-				$psr7Response->close();
+				$psr7Response = $psr7Response->close();
 			}
 		} catch (\Throwable $e) {
-			$this->getContainer()->singleton(HandlerExceptions::class)->handle($e, $this->serverType);
-			$psr7Response->close();
+			$this->getContainer()->singleton(HandlerExceptions::class)->getHandler()->report($e);
+			$psr7Response = $psr7Response->close();
 		}
+
+		return $psr7Response;
 	}
 }
