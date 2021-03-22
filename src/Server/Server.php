@@ -19,7 +19,6 @@ use W7\App;
 use W7\Tcp\Server\Server as TcpServer;
 
 class Server extends TcpServer {
-	public static $aloneServer = true;
 	public static $supportProtocol = [
 		'v3' => V3::class,
 		'v5' => V5::class
@@ -51,18 +50,14 @@ class Server extends TcpServer {
 	}
 
 	public function listener(\Swoole\Server $server) {
-		if ($server->port != $this->setting['port']) {
-			$this->server = $server->addListener($this->setting['host'], $this->setting['port'], $this->setting['sock_type']);
-			//tcp需要强制关闭其它协议支持，否则继续父服务
-			$this->server->set([
-				'open_http2_protocol' => false,
-				'open_http_protocol' => false,
-				'open_websocket_protocol' => false,
-				'open_mqtt_protocol' => true
-			]);
-		} else {
-			$this->server = $server;
-		}
+		$this->server = $server->addListener($this->setting['host'], $this->setting['port'], $this->setting['sock_type']);
+		//tcp需要强制关闭其它协议支持，否则继续父服务
+		$this->server->set([
+			'open_http2_protocol' => false,
+			'open_http_protocol' => false,
+			'open_websocket_protocol' => false,
+			'open_mqtt_protocol' => true
+		]);
 
 		$this->registerService();
 	}
