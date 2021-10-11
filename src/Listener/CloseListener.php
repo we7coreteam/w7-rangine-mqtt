@@ -15,6 +15,7 @@ namespace W7\Mqtt\Listener;
 use Swoole\Server;
 use W7\Core\Listener\ListenerAbstract;
 use W7\Core\Server\ServerEvent;
+use W7\Mqtt\Collector\FdCollector;
 
 class CloseListener extends ListenerAbstract {
 	public function run(...$params) {
@@ -24,9 +25,8 @@ class CloseListener extends ListenerAbstract {
 
 	private function onClose(Server $server, int $fd, int $reactorId): void {
 		//删除数据绑定记录
-		$this->getContainer()->append('mqtt-client', [
-			$fd => []
-		], []);
+		FdCollector::instance()->delete($fd);
+
 		$this->getEventDispatcher()->dispatch(ServerEvent::ON_USER_AFTER_CLOSE, [$server, $fd, $reactorId, 'mqtt']);
 	}
 }
