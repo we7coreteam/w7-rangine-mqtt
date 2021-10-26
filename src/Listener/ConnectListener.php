@@ -24,7 +24,7 @@ use W7\Mqtt\Collector\FdCollector;
 class ConnectListener extends ListenerAbstract {
 	public function run(...$params) {
 		list($server, $fd, $reactorId) = $params;
-		return $this->onConnect($server, $fd, $reactorId);
+		$this->onConnect($server, $fd, $reactorId);
 	}
 
 	private function onConnect(Server $server, $fd, $reactorId) {

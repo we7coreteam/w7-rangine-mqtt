@@ -49,7 +49,7 @@ class Dispatcher extends RequestDispatcher {
 				/**
 				 * @var HandlerInterface $handler
 				 */
-				$handler = $this->getContainer()->singleton($mqttServer->setting['handler']);
+				$handler = $this->getContainer()->get($mqttServer->setting['handler']);
 				switch ($data['type']) {
 					case Types::PINGREQ: // 心跳请求
 						if ($handler->onMqPing($psr7Request)) {
@@ -91,7 +91,7 @@ class Dispatcher extends RequestDispatcher {
 				$psr7Response = $psr7Response->close();
 			}
 		} catch (\Throwable $e) {
-			$this->getContainer()->singleton(HandlerExceptions::class)->getHandler()->report($e);
+			$this->getContainer()->get(HandlerExceptions::class)->getHandler()->report($e);
 			$psr7Response = $psr7Response->close();
 		}
 
