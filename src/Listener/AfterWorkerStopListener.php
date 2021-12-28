@@ -14,14 +14,11 @@ namespace W7\Mqtt\Listener;
 
 use W7\App;
 use W7\Core\Listener\ListenerAbstract;
+use W7\Mqtt\Collector\FdCollector;
 
 class AfterWorkerStopListener extends ListenerAbstract {
 	public function run(...$params) {
-		if ($this->getContainer()->has('mqtt-client')) {
-			$clientCollector = $this->getContainer()->get('mqtt-client') ?? [];
-		} else {
-			$clientCollector = [];
-		}
+		$clientCollector = FdCollector::instance()->all();
 		if (empty($clientCollector)) {
 			return true;
 		}
@@ -30,6 +27,6 @@ class AfterWorkerStopListener extends ListenerAbstract {
 			App::$server->getServer()->exists($fd) && App::$server->getServer()->close($fd);
 		}
 
-		$this->getContainer()->delete('mqtt-client');
+		FdCollector::instance()->clear();
 	}
 }
