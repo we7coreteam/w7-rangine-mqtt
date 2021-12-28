@@ -12,6 +12,7 @@
 
 namespace W7\Mqtt\Server;
 
+use Simps\MQTT\Packet\PackV5;
 use Simps\MQTT\Protocol\ProtocolInterface;
 use Simps\MQTT\Protocol\Types;
 use W7\App;
@@ -84,6 +85,10 @@ class Dispatcher extends RequestDispatcher {
 						break;
 					case Types::UNSUBSCRIBE: // 取消订阅
 						$message = $handler->onMqUnSubscribe($psr7Request);
+						$psr7Response = $psr7Response->withContent($message);
+						break;
+					case Types::AUTH:
+						$message = $handler->onAuth($psr7Request);
 						$psr7Response = $psr7Response->withContent($message);
 						break;
 				}

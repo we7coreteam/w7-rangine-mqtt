@@ -12,15 +12,17 @@
 
 namespace W7\Mqtt\Handler;
 
+use Simps\MQTT\Message\AbstractMessage;
 use W7\Http\Message\Server\Request;
-use W7\Mqtt\Message\ConnAckMessage;
+use W7\Mqtt\Message\AuthMessage;
 use W7\Mqtt\Message\PubCompMessage;
 use W7\Mqtt\Message\PubRelMessage;
 use W7\Mqtt\Message\SubAckMessage;
 use W7\Mqtt\Message\UnSubAckMessage;
 
 interface HandlerInterface {
-	public function onMqConnect(Request $request) : ConnAckMessage;
+	public function onMqConnect(Request $request) : AbstractMessage;
+	public function onAuth(Request $request) : AuthMessage;
 	public function onMqPing(Request $request): bool;
 	public function onMqDisconnect(Request $request): bool;
 	public function onMqPublish(Request $request);
